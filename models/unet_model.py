@@ -982,6 +982,7 @@ class ACGPNDiscriminator(nn.Module):
         return self.model(img_input)
 
 
+
 if __name__ == "__main__":
     input_tensor = torch.rand(1, 3, 512, 512)
     model = AttU_Net2()

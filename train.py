@@ -6,7 +6,8 @@ import pytorch_lightning as pl
 from pytorch_lightning.loggers import TensorBoardLogger
 
 from configs.config import read_conf_file
-from module import HumanParsing
+from human_parsing import HumanParsing
+from human_parsing_wtih_classifcation import HumanParsingWtihClassifcation
 from datamodule import HumanParsingDataModule
 
 
@@ -14,7 +15,7 @@ def run_experiments(experiments: List[str]) -> None:
     for experiment in experiments:
         hparams = read_conf_file(yaml_path=experiment)
         print("hparams: ", hparams)
-        module = HumanParsing(hparams=hparams)
+        module = HumanParsingWtihClassifcation(hparams=hparams)
         datamodule = HumanParsingDataModule(hparams=hparams)
         checkpoint_path = None
         if hparams["checkpoint_path"]:
@@ -60,15 +61,11 @@ def run_experiments(experiments: List[str]) -> None:
         trainer.test()
 
 
-# hujowa sie szkoli teraz co spr
-# - normalizacja+lr ok
-# - inny optimazer
-# - usuniecie ostatniej fukcji aktywacji
-# - dodanie l1 loss
 if __name__ == "__main__":
     torch.cuda.empty_cache()
     experiments = [
-        "configs/configs/unet_Adam_GCC.yaml",
+        "configs/configs/conv_unet_Adam_GCC.yaml"
+        # "configs/configs/unet_Adam_GCC.yaml",
         # "configs/configs/unet_SGD_GCC.yaml",
     ]
     run_experiments(experiments=experiments)

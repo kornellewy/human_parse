@@ -1,0 +1,12 @@
+tags: "conv_unet_Adam_GCC"
+title: "conv_unet_Adam_GCC"
+epochs_num: 500
+batch_size: 18
+model_name: "conv_unet"
+model_in_channels: 3
+model_out_channels: 9
+base_dir_path: "conv_unet_Adam_GCC"
+dataset_path: "J:/deepcloth/datasets/human_body_parsing/kjn_parse_dataset_002"
+checkpoint_path: "best/last.ckpt"
+optim_type: "AdamW_GCC"
+lr: 0.001

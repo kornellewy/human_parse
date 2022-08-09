@@ -7,7 +7,6 @@ https://github.com/facebookresearch/ConvNeXt/blob/main/models/convnext.py
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from zmq import device
 
 
 class LayerNorm(nn.Module):
@@ -112,7 +111,7 @@ class UpConvNext2(nn.Module):
         self.upscale_factor = 2
         self.pixel = nn.PixelShuffle(upscale_factor=self.upscale_factor)
         self.up = nn.ConvTranspose2d(
-            ch_in // self.upscale_factor ** 2,
+            ch_in // self.upscale_factor**2,
             ch_out,
             kernel_size=3,
             stride=1,
@@ -593,6 +592,89 @@ class R2AttU_ConvNext(nn.Module):
         d1 = self.last_activation(d1)
 
         return d1
+
+
+class U_ConvNextWithClassification(nn.Module):
+    """
+    Version 1 using jast ConvNext_block. No bach normalization and no relu.
+    """
+
+    def __init__(self, img_ch=3, output_ch=9, channels=24, n_classes=9):
+        super().__init__()
+        self.Maxpool = nn.AvgPool2d(kernel_size=2, stride=2)
+        self.dropout = nn.Dropout(0.5)
+
+        self.Conv1 = ConvNext_block(ch_in=img_ch, ch_out=channels)
+        self.Conv2 = ConvNext_block(ch_in=channels, ch_out=channels * 2)
+        self.Conv3 = ConvNext_block(ch_in=channels * 2, ch_out=channels * 4)
+        self.Conv4 = ConvNext_block(ch_in=channels * 4, ch_out=channels * 8)
+        self.Conv5 = ConvNext_block(ch_in=channels * 8, ch_out=channels * 16)
+
+        self.Up5 = UpConvNext2(ch_in=channels * 16, ch_out=channels * 8)
+        self.Up_conv5 = ConvNext_block(ch_in=channels * 16, ch_out=channels * 8)
+
+        self.Up4 = UpConvNext2(ch_in=channels * 8, ch_out=channels * 4)
+        self.Up_conv4 = ConvNext_block(ch_in=channels * 8, ch_out=channels * 4)
+
+        self.Up3 = UpConvNext2(ch_in=channels * 4, ch_out=channels * 2)
+        self.Up_conv3 = ConvNext_block(ch_in=channels * 4, ch_out=channels * 2)
+
+        self.Up2 = UpConvNext2(ch_in=channels * 2, ch_out=channels)
+        self.Up_conv2 = ConvNext_block(ch_in=channels * 2, ch_out=channels)
+
+        self.Conv_1x1 = nn.Conv2d(
+            channels, output_ch, kernel_size=1, stride=1, padding=0
+        )
+        self.last_activation = nn.LogSoftmax(dim=1)
+
+        self.classifier = nn.Sequential(
+            nn.Flatten(), nn.Linear(98304, 100), nn.GELU(), nn.Linear(100, n_classes)
+        )
+
+    def forward(self, x):
+        # encoding path
+
+        x1 = self.Conv1(x)
+
+        x2 = self.Maxpool(x1)
+        x2 = self.Conv2(x2)
+        x2 = self.dropout(x2)
+
+        x3 = self.Maxpool(x2)
+        x3 = self.Conv3(x3)
+        x3 = self.dropout(x3)
+
+        x4 = self.Maxpool(x3)
+        x4 = self.Conv4(x4)
+        x4 = self.dropout(x4)
+
+        x5 = self.Maxpool(x4)
+        x5 = self.Conv5(x5)
+        x5 = self.dropout(x5)
+        # decoding + concat path
+        d5 = self.Up5(x5)
+        d5 = torch.cat((x4, d5), dim=1)
+
+        d5 = self.Up_conv5(d5)
+
+        d4 = self.Up4(d5)
+        d4 = torch.cat((x3, d4), dim=1)
+        d4 = self.Up_conv4(d4)
+
+        d3 = self.Up3(d4)
+        d3 = torch.cat((x2, d3), dim=1)
+        d3 = self.Up_conv3(d3)
+
+        d2 = self.Up2(d3)
+        d2 = torch.cat((x1, d2), dim=1)
+        d2 = self.Up_conv2(d2)
+
+        d1 = self.Conv_1x1(d2)
+        d1 = self.last_activation(d1)
+
+        classfication = self.classifier(x5)
+
+        return d1, classfication
 
 
 if __name__ == "__main__":
