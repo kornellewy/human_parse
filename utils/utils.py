@@ -13,9 +13,18 @@ from typing import List
 from collections import defaultdict
 
 import torch
-from torchvision import transforms
-from torch.autograd import Variable
 from torchvision.utils import save_image
+
+
+def load_jsons(dir_path: str) -> List[str]:
+    jsons = []
+    valid_jsons = [".json"]
+    for f in os.listdir(dir_path):
+        ext = os.path.splitext(f)[1]
+        if ext.lower() not in valid_jsons:
+            continue
+        jsons.append(os.path.join(dir_path, f))
+    return jsons
 
 
 def load_images(path):
@@ -26,7 +35,18 @@ def load_images(path):
         if ext.lower() not in valid_images:
             continue
         images.append(os.path.join(path, f))
-    return sorted(images)
+    return images
+
+
+def load_images_to_image_name_path_map(dataset_path: Path) -> dict:
+    return {Path(path).stem: path for path in load_images(dataset_path.as_posix())}
+
+
+def load_poses_to_image_name_path_map(dataset_path: Path) -> dict:
+    return {
+        Path(path).stem.replace("_keypoints", ""): path
+        for path in load_jsons(dataset_path.as_posix())
+    }
 
 
 def yield_files_with_extensions(folder_path, file_extension):

@@ -1,23 +1,17 @@
 import torch
-import torch.nn as nn
 import pytorch_lightning as pl
 
-from human_parsing_dataset_with_classifcation import (
-    HumanParsingDatasetWtihClassifcation,
-)
-from human_parsing_dataset_with_pose_with_classifcation import (
-    HumanParsingDatasetWithPoseWithClassifcation,
-)
+from dataset.human_parsing_with_pose_dataset import HumanParsingWithPoseDataset
 
 
-class HumanParsingDataModuleWtihClassifcation(pl.LightningDataModule):
+class HumanParsingDataModule(pl.LightningDataModule):
     def __init__(self, hparams: dict):
         super().__init__()
         self._hparams = hparams
 
-    def setup(self, stage):
-        dataset = HumanParsingDatasetWtihClassifcation(self._hparams["dataset_path"])
-        if len(dataset) > 2001:
+    def setup(self, stage=""):
+        dataset = HumanParsingWithPoseDataset(self._hparams["dataset_path"])
+        if len(dataset) > 2000:
             train_size = int(0.98 * len(dataset))
             valid_size = int(0.01 * len(dataset))
             test_size = int(0.01 * len(dataset))

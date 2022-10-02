@@ -8,7 +8,7 @@ from pytorch_lightning.loggers import TensorBoardLogger
 from configs.config import read_conf_file
 from human_parsing import HumanParsing
 from human_parsing_with_pose import HumanParsingWithPose
-from human_parsing_wtih_classifcation import HumanParsingWtihClassifcation
+from human_parsing_with_classifcation import HumanParsingWtihClassifcation
 from human_parsing_data_module_with_classifcation import (
     HumanParsingDataModuleWtihClassifcation,
 )

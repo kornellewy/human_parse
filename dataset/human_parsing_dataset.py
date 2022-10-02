@@ -8,18 +8,7 @@ import cv2
 import albumentations as A
 import json
 
-from virtual_try_on.utils.utils import load_images, visualize_agumented_data, load_jsons
-
-
-def load_images_to_image_name_path_map(dataset_path: Path) -> dict:
-    return {Path(path).stem: path for path in load_images(dataset_path.as_posix())}
-
-
-def load_poses_to_image_name_path_map(dataset_path: Path) -> dict:
-    return {
-        Path(path).stem.replace("_keypoints", ""): path
-        for path in load_jsons(dataset_path.as_posix())
-    }
+from utils.utils import load_images, load_images_to_image_name_path_map
 
 
 class HumanParsingDataset(torch.utils.data.Dataset):

@@ -1,4 +1,3 @@
-import os
 from pathlib import Path
 
 import torch
@@ -7,20 +6,7 @@ import numpy as np
 import cv2
 import albumentations as A
 
-
-def load_images(path):
-    images = []
-    valid_images = [".jpeg", ".jpg", ".png"]
-    for f in os.listdir(path):
-        ext = os.path.splitext(f)[1]
-        if ext.lower() not in valid_images:
-            continue
-        images.append(os.path.join(path, f))
-    return sorted(images)
-
-
-def load_images_to_image_name_path_map(dataset_path: Path) -> dict:
-    return {Path(path).stem: path for path in load_images(dataset_path.as_posix())}
+from utils.utils import load_images, load_images_to_image_name_path_map
 
 
 class HumanParsingDatasetWtihClassifcation(torch.utils.data.Dataset):
