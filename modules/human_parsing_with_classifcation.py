@@ -16,8 +16,7 @@ import torch.nn as nn
 import pytorch_lightning as pl
 
 from optims.Adam import Adam_GCC2, AdamW_GCC
-from models.convnext_model import U_ConvNextWithClassification
-from visualization_utils import board_add_images
+from u_net_models.u_net_models import U_ConvNextWithClassification
 from torchmetrics import JaccardIndex
 
 

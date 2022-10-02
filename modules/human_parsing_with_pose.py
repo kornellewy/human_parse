@@ -16,18 +16,16 @@ import torch.nn as nn
 import pytorch_lightning as pl
 from torch.optim.lr_scheduler import MultiStepLR
 
-from models.model import (
-    init_weights,
-)
-from models.unet_model import (
+from u_net_models.u_net_models import (
+    U_ConvNext,
+    GeneratorConvNext001,
+    GeneratorResNet,
     U_Net2,
     R2U_Net2,
     AttU_Net2,
     R2AttU_Net2,
+    init_weights,
 )
-from models.convnext_model import U_ConvNext, GeneratorConvNext001
-from models.resnet_model import GeneratorResNet
-from visualization_utils import board_add_images
 from optims.Adam import Adam_GCC2, AdamW_GCC
 from optims.SGD import SGD_GCC
 from losses.canny_loss import CannyLoss
