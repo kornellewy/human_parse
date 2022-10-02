@@ -1,20 +1,29 @@
+import os
 from pathlib import Path
 
 import torch
-import torch.nn as nn
-import torchvision.transforms as transforms
+from torchvision import transforms
 import numpy as np
 import cv2
 import albumentations as A
 
-from virtual_try_on.utils.utils import load_images, visualize_agumented_data
+
+def load_images(path):
+    images = []
+    valid_images = [".jpeg", ".jpg", ".png"]
+    for f in os.listdir(path):
+        ext = os.path.splitext(f)[1]
+        if ext.lower() not in valid_images:
+            continue
+        images.append(os.path.join(path, f))
+    return sorted(images)
 
 
 def load_images_to_image_name_path_map(dataset_path: Path) -> dict:
     return {Path(path).stem: path for path in load_images(dataset_path.as_posix())}
 
 
-class HumanParsingDataset(torch.utils.data.Dataset):
+class HumanParsingDatasetWtihClassifcation(torch.utils.data.Dataset):
     IMAGES_DIR_NAME = "image"
     LABELS_DIR_NAME = "label"
     AGUMENTATIONS = A.Compose(
@@ -78,7 +87,7 @@ class HumanParsingDataset(torch.utils.data.Dataset):
     def __init__(
         self,
         dataset_path: str,
-        output_size: tuple = (224, 224),
+        output_size: tuple = (256, 256),
         train_mode: bool = True,
     ) -> None:
         self.dataset_path = dataset_path
@@ -112,21 +121,22 @@ class HumanParsingDataset(torch.utils.data.Dataset):
         image = cv2.resize(image, self.output_size, cv2.INTER_AREA).astype(np.uint8)
         label = cv2.resize(label, self.output_size, cv2.INTER_AREA).astype(np.uint8)
 
-        label = torch.from_numpy(label).long()
+        # label_classification = np.unique(label)
+        label_classification, _ = np.histogram(
+            label,
+            bins=len(self.CLASS_MAP),
+            range=(-0.5, len(self.CLASS_MAP) - 0.5),
+        )
+        label_classification = np.asarray(
+            np.asarray(label_classification, dtype=np.bool), dtype=np.uint8
+        )
+
         image = self.TRANSFORMS(image)
+        label = torch.from_numpy(label).long()
+        label_classification = torch.from_numpy(label_classification).float()
         return {
             "image_name": image_name,
             "image": image,
             "label": label,
+            "label_classification": label_classification,
         }
-
-
-if __name__ == "__main__":
-    dataset_path = Path(
-        "J:/deepcloth/datasets/human_body_parsing/kjn_parse_dataset_001"
-    )
-    dataset = HumanParsingDataset(dataset_path=dataset_path, train_mode=True)
-    for i in range(len(dataset) - 1):
-        output = dataset[i]
-        output["image"].size
-        output["label"].size

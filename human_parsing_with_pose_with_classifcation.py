@@ -21,7 +21,7 @@ from visualization_utils import board_add_images
 from torchmetrics import JaccardIndex
 
 
-class HumanParsingWtihClassifcation(pl.LightningModule):
+class HumanParsingWtihPoseWtihClassifcation(pl.LightningModule):
     def __init__(
         self,
         hparams: dict,
@@ -35,7 +35,10 @@ class HumanParsingWtihClassifcation(pl.LightningModule):
 
     def init_model(self):
         if self._hparams["model_name"] == "conv_unet":
-            model = U_ConvNextWithClassification()
+            model = U_ConvNextWithClassification(
+                img_ch=self._hparams["model_in_channels"],
+                output_ch=self._hparams["model_out_channels"],
+            )
         return model
 
     def configure_optimizers(self):
@@ -48,14 +51,18 @@ class HumanParsingWtihClassifcation(pl.LightningModule):
 
     def forward(self, batch):
         image = batch["image"]
-        output_predition, _ = self.model(image)
+        pose = batch["pose"]
+        representation = torch.cat([image, pose], 1)
+        output_predition, _ = self.model(representation)
         return output_predition
 
     def training_step(self, batch, _):
         image = batch["image"]
         label = batch["label"]
+        pose = batch["pose"]
         label_classification = batch["label_classification"]
-        output_predition, output_classification = self.model(image)
+        representation = torch.cat([image, pose], 1)
+        output_predition, output_classification = self.model(representation)
         segmentation_loss = self.criterion_segmentation(output_predition, label)
         classification_loss = self.criterion_classification(
             output_classification, label_classification
@@ -69,8 +76,10 @@ class HumanParsingWtihClassifcation(pl.LightningModule):
     def validation_step(self, batch, _):
         image = batch["image"]
         label = batch["label"]
+        pose = batch["pose"]
         label_classification = batch["label_classification"]
-        output_predition, output_classification = self.model(image)
+        representation = torch.cat([image, pose], 1)
+        output_predition, output_classification = self.model(representation)
         segmentation_loss = self.criterion_segmentation(output_predition, label)
         classification_loss = self.criterion_classification(
             output_classification, label_classification
@@ -105,9 +114,9 @@ class HumanParsingWtihClassifcation(pl.LightningModule):
     def test_step(self, batch, _):
         image = batch["image"]
         label = batch["label"]
-        label_classification = batch["label_classification"]
-        output_predition, _ = self.model(image)
-
+        pose = batch["pose"]
+        representation = torch.cat([image, pose], 1)
+        output_predition, _ = self.model(representation)
         loss = self.criterionIOU(output_predition, label)
         output_predition = output_predition.unsqueeze(dim=1)
         label = label.unsqueeze(dim=1)

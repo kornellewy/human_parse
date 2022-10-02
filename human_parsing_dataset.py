@@ -6,15 +6,25 @@ import torchvision.transforms as transforms
 import numpy as np
 import cv2
 import albumentations as A
+import json
 
-from virtual_try_on.utils.utils import load_images, visualize_agumented_data
+from virtual_try_on.utils.utils import load_images, visualize_agumented_data, load_jsons
 
 
 def load_images_to_image_name_path_map(dataset_path: Path) -> dict:
     return {Path(path).stem: path for path in load_images(dataset_path.as_posix())}
 
 
-class HumanParsingWithTransformation(torch.utils.data.Dataset):
+def load_poses_to_image_name_path_map(dataset_path: Path) -> dict:
+    return {
+        Path(path).stem.replace("_keypoints", ""): path
+        for path in load_jsons(dataset_path.as_posix())
+    }
+
+
+class HumanParsingDataset(torch.utils.data.Dataset):
+    IMAGES_DIR_NAME = "image"
+    LABELS_DIR_NAME = "label"
     AGUMENTATIONS = A.Compose(
         [
             A.ChannelShuffle(p=0.2),
@@ -62,7 +72,7 @@ class HumanParsingWithTransformation(torch.utils.data.Dataset):
         ]
     )
     CLASS_MAP = {
-        0: "Background", 
+        0: "Background",
         1: "Hat+Hair",
         2: "Sunglasses+Face+Neck",
         3: "UpperClothes+Dress+Coat",
@@ -72,83 +82,59 @@ class HumanParsingWithTransformation(torch.utils.data.Dataset):
         7: "Left-arm+Left-hend",
         8: "Right-arm+Right-hend",
     }
-    atr_class_map = {
-        1: "Hat",
-        2: "Hair",
-        3: "Sunglasses",
-        4: "UpperClothes",
-        5: "Skirt",
-        6: "Pants",
-        7: "Dress",
-        8: "Belt",
-        9: "Left-shoe",
-        10: "Right-shoe",
-        11: "Face+Neck",
-        12: "Left-leg",
-        13: "Right-leg",
-        14: "Left-arm",
-        15: "Right-arm",
-        16: "Bag",
-        17: "Scarf",
-    }
-    atr_to_kjn_map = {
-        0: 0,
-        1: 1,
-        2: 1,
-        3: 2,
-        4: 3,
-        5: 4,
-        6: 4,
-        7: 3,
-        9: 5,
-        10: 6,
-        11: 2,
-        12: 5,
-        13: 6,
-        14: 7,
-        15: 8,
-        16: 0,
-        17: 0,
-    }
-    lip_to_kjn_map = {
-        0: 0,
-        1: 1,
-        2: 1,
-        3: 0,
-        4: 2,
-        5: 3,
-        6: 3,
-        7: 3,
-        8: 0,
-        9: 4,
-        10: 4,
-        11: 0,
-        12: 4,
-        13: 2,
-        14: 7,
-        15: 8,
-        16: 5,
-        17: 6,
-        18: 5,
-        19: 6,
-    }
 
     def __init__(
         self,
         dataset_path: str,
-        one_shot_dataset_image_path: str,
-        one_shot_dataset_label_path: str,
-        atr_dataset_image_path: str,
-        atr_dataset_label_path: str,
-        train_lip_dataset_image_path: str,
-        train_lip_dataset_label_path: str,
-        valid_lip_dataset_image_path: str,
-        valid_lip_dataset_label_path: str, 
         output_size: tuple = (224, 224),
         train_mode: bool = True,
     ) -> None:
         self.dataset_path = dataset_path
         self.output_size = output_size
         self.train_mode = train_mode
-        
-        
+        self.images_dir_path = Path(self.dataset_path).joinpath(self.IMAGES_DIR_NAME)
+        self.labels_dir_path = Path(self.dataset_path).joinpath(self.LABELS_DIR_NAME)
+
+        self.image_paths = load_images(self.images_dir_path.as_posix())
+        self.label_name_to_path_map = load_images_to_image_name_path_map(
+            self.labels_dir_path
+        )
+
+    def __len__(self) -> int:
+        return len(self.image_paths)
+
+    def __getitem__(self, index: int) -> dict:
+        image_path = self.image_paths[index]
+        image_name = Path(image_path).stem
+        label_path = self.label_name_to_path_map[image_name]
+
+        image = cv2.imread(image_path)
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+
+        label = cv2.imread(label_path, 0)
+
+        if self.train_mode:
+            agumented_data = self.AGUMENTATIONS(image=image)
+            image = agumented_data["image"].astype(np.uint8)
+
+        image = cv2.resize(image, self.output_size, cv2.INTER_AREA).astype(np.uint8)
+        label = cv2.resize(label, self.output_size, cv2.INTER_AREA).astype(np.uint8)
+
+        label = torch.from_numpy(label).long()
+        image = self.TRANSFORMS(image)
+        return {
+            "image_name": image_name,
+            "image": image,
+            "label": label,
+        }
+
+
+if __name__ == "__main__":
+    dataset_path = Path(
+        "J:/deepcloth/datasets/human_body_parsing/kjn_parse_dataset_001"
+    )
+    dataset = HumanParsingDataset(dataset_path=dataset_path, train_mode=True)
+    for i in range(len(dataset) - 1):
+        output = dataset[i]
+        output["image"].size
+        output["label"].size

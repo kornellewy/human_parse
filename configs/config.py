@@ -14,7 +14,7 @@ def read_conf_file(yaml_path: Union[Path, str]) -> dict:
 
 def create_tags(data_loaded: dict) -> dict:
     tag = [
-        data_loaded["model_generator_name"],
+        data_loaded["model_name"],
         data_loaded["optim_type"],
     ]
     tag = "_".join(tag)

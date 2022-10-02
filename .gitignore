@@ -128,3 +128,7 @@ dmypy.json
 # Pyre type checker
 .pyre/
 detectron_output*
+best*
+att_conv_unet_AdamW_GCC*
+conv_unet_AdamW_GCC*
+conv_unet_SGD_GCC*

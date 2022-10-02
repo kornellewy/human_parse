@@ -14,6 +14,7 @@ https://colab.research.google.com/drive/1F_RNcHzTfFuQf-LeKvSlud6x7jXYkG31#scroll
 import torch
 import torch.nn as nn
 import pytorch_lightning as pl
+from torch.optim.lr_scheduler import MultiStepLR
 
 from models.model import (
     init_weights,
@@ -24,7 +25,7 @@ from models.unet_model import (
     AttU_Net2,
     R2AttU_Net2,
 )
-from models.convnext_model import U_ConvNext, GeneratorConvNext001, AttU_ConvNext
+from models.convnext_model import U_ConvNext, GeneratorConvNext001
 from models.resnet_model import GeneratorResNet
 from visualization_utils import board_add_images
 from optims.Adam import Adam_GCC2, AdamW_GCC
@@ -33,7 +34,7 @@ from losses.canny_loss import CannyLoss
 from torchmetrics import JaccardIndex
 
 
-class HumanParsing(pl.LightningModule):
+class HumanParsingWithPose(pl.LightningModule):
     def __init__(
         self,
         hparams: dict,
@@ -77,12 +78,6 @@ class HumanParsing(pl.LightningModule):
                 img_ch=self._hparams["model_in_channels"],
                 output_ch=self._hparams["model_out_channels"],
             )
-        elif self._hparams["model_name"] == "att_conv_unet":
-            model = AttU_ConvNext(
-                img_ch=self._hparams["model_in_channels"],
-                output_ch=self._hparams["model_out_channels"],
-            )
-
         elif self._hparams["model_name"] == "resnet":
             model = GeneratorResNet(
                 img_ch=self._hparams["model_in_channels"],
@@ -97,18 +92,22 @@ class HumanParsing(pl.LightningModule):
 
     def forward(self, batch):
         image = batch["image"]
-        output_generator = self.model(image)
-        output_generator_mask = torch.argmax(output_generator, dim=1)
-        return output_generator, output_generator_mask
+        pose = batch["pose"]
+        representation = torch.cat([image, pose], 1)
+        output = self.model(representation)
+        output_generator_mask = torch.argmax(output, dim=1)
+        return output, output_generator_mask
 
     def training_step(self, batch, _):
         image = batch["image"]
         label = batch["label"]
+        pose = batch["pose"]
 
-        output_generator = self.model(image)
-        output_generator_mask = torch.argmax(output_generator, dim=1)
+        representation = torch.cat([image, pose], 1)
+        output = self.model(representation)
+        output_generator_mask = torch.argmax(output, dim=1)
 
-        cross_entropy_loss = self.criterionCrossEntropy(output_generator, label)
+        cross_entropy_loss = self.criterionCrossEntropy(output, label)
         output_generator_mask = torch.unsqueeze(output_generator_mask, dim=1)
         label = torch.unsqueeze(label, dim=1)
         canny_loss = self.criterionCANNY(output_generator_mask.float(), label.float())
@@ -128,11 +127,13 @@ class HumanParsing(pl.LightningModule):
     def validation_step(self, batch, _):
         image = batch["image"]
         label = batch["label"]
+        pose = batch["pose"]
 
-        output_generator = self.model(image)
-        output_generator_mask = torch.argmax(output_generator, dim=1)
+        representation = torch.cat([image, pose], 1)
+        output = self.model(representation)
+        output_generator_mask = torch.argmax(output, dim=1)
 
-        cross_entropy_loss = self.criterionCrossEntropy(output_generator, label)
+        cross_entropy_loss = self.criterionCrossEntropy(output, label)
         output_generator_mask = torch.unsqueeze(output_generator_mask, dim=1)
         label = torch.unsqueeze(label, dim=1)
         canny_loss = self.criterionCANNY(output_generator_mask.float(), label.float())
@@ -173,11 +174,13 @@ class HumanParsing(pl.LightningModule):
     def test_step(self, batch, _):
         image = batch["image"]
         label = batch["label"]
+        pose = batch["pose"]
 
-        output_generator = self.model(image)
-        output_generator_mask = torch.argmax(output_generator, dim=1)
+        representation = torch.cat([image, pose], 1)
+        output = self.model(representation)
+        output_generator_mask = torch.argmax(output, dim=1)
 
-        cross_entropy_loss = self.criterionCrossEntropy(output_generator, label)
+        cross_entropy_loss = self.criterionCrossEntropy(output, label)
         output_generator_mask = torch.unsqueeze(output_generator_mask, dim=1)
         label = torch.unsqueeze(label, dim=1)
         canny_loss = self.criterionCANNY(output_generator_mask.float(), label.float())
@@ -215,4 +218,7 @@ class HumanParsing(pl.LightningModule):
             optimizer = AdamW_GCC(self.model.parameters(), lr=lr)
         elif self._hparams["optim_type"] == "SGD_GCC":
             optimizer = SGD_GCC(self.model.parameters(), lr=lr)
-        return optimizer
+        scheduler = MultiStepLR(
+            optimizer, milestones=[x for x in range(0, self._hparams["epochs_num"], 10)]
+        )
+        return [optimizer], [scheduler]
