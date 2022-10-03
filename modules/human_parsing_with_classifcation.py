@@ -17,6 +17,7 @@ import pytorch_lightning as pl
 
 from optims.Adam import Adam_GCC2, AdamW_GCC
 from u_net_models.u_net_models import U_ConvNextWithClassification
+from psp_models.pspnet import PSPNet
 from torchmetrics import JaccardIndex
 
 
@@ -33,7 +34,56 @@ class HumanParsingWtihClassifcation(pl.LightningModule):
         self.criterionIOU = JaccardIndex(num_classes=9)
 
     def init_model(self):
-        if self._hparams["model_name"] == "conv_unet":
+        if self._hparams["model_name"] == "squeezenet":
+            model = PSPNet(
+                sizes=(1, 2, 3, 6),
+                psp_size=512,
+                deep_features_size=256,
+                backend="squeezenet",
+            )
+        elif self._hparams["model_name"] == "densenet121":
+            model = PSPNet(
+                sizes=(1, 2, 3, 6),
+                psp_size=1024,
+                deep_features_size=512,
+                backend="densenet",
+            )
+        elif self._hparams["model_name"] == "resnet18":
+            model = PSPNet(
+                sizes=(1, 2, 3, 6),
+                psp_size=512,
+                deep_features_size=256,
+                backend="resnet18",
+            )
+        elif self._hparams["model_name"] == "resnet34":
+            model = PSPNet(
+                sizes=(1, 2, 3, 6),
+                psp_size=512,
+                deep_features_size=256,
+                backend="resnet34",
+            )
+        elif self._hparams["model_name"] == "resnet50":
+            model = PSPNet(
+                sizes=(1, 2, 3, 6),
+                psp_size=2048,
+                deep_features_size=1024,
+                backend="resnet50",
+            )
+        elif self._hparams["model_name"] == "resnet101":
+            model = PSPNet(
+                sizes=(1, 2, 3, 6),
+                psp_size=2048,
+                deep_features_size=1024,
+                backend="resnet101",
+            )
+        elif self._hparams["model_name"] == "resnet152":
+            model = PSPNet(
+                sizes=(1, 2, 3, 6),
+                psp_size=2048,
+                deep_features_size=1024,
+                backend="resnet152",
+            )
+        elif self._hparams["model_name"] == "conv_unet":
             model = U_ConvNextWithClassification()
         return model
 

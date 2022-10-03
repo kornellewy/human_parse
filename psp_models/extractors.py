@@ -24,6 +24,7 @@ def squeezenet(pretrained=True):
     model = SqueezeNet()
     if pretrained:
         from torchvision.models.squeezenet import squeezenet1_1
+
         source_state = squeezenet1_1(pretrained=True).features.state_dict()
         load_weights_sequential(model, source_state)
     return model
@@ -36,33 +37,33 @@ def densenet(pretrained=True):
 def resnet18(pretrained=True):
     model = ResNet(BasicBlock, [2, 2, 2, 2])
     if pretrained:
-        load_weights_sequential(model, model_zoo.load_url(model_urls['resnet18']))
+        load_weights_sequential(model, model_zoo.load_url(model_urls["resnet18"]))
     return model
 
 
 def resnet34(pretrained=True):
     model = ResNet(BasicBlock, [3, 4, 6, 3])
     if pretrained:
-        load_weights_sequential(model, model_zoo.load_url(model_urls['resnet34']))
+        load_weights_sequential(model, model_zoo.load_url(model_urls["resnet34"]))
     return model
 
 
 def resnet50(pretrained=True):
     model = ResNet(Bottleneck, [3, 4, 6, 3])
     if pretrained:
-        load_weights_matched(model, model_zoo.load_url(model_urls['resnet50']))
+        load_weights_matched(model, model_zoo.load_url(model_urls["resnet50"]))
     return model
 
 
 def resnet101(pretrained=True):
     model = ResNet(Bottleneck, [3, 4, 23, 3])
     if pretrained:
-        load_weights_matched(model, model_zoo.load_url(model_urls['resnet101']))
+        load_weights_matched(model, model_zoo.load_url(model_urls["resnet101"]))
     return model
 
 
 def resnet152(pretrained=True):
     model = ResNet(Bottleneck, [3, 8, 36, 3])
     if pretrained:
-        load_weights_matched(model, model_zoo.load_url(model_urls['resnet152']))
+        load_weights_matched(model, model_zoo.load_url(model_urls["resnet152"]))
     return model

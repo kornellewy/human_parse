@@ -1,0 +1,12 @@
+tags: "squeezenet_SGD_GCC"
+title: "squeezenet_SGD_GCC"
+epochs_num: 10
+batch_size: 32
+model_name: "squeezenet"
+model_in_channels: 3
+model_out_channels: 9
+base_dir_path: "squeezenet_SGD_GCC"
+dataset_path: "J:/deepcloth/datasets/human_body_parsing/kjn_parse_dataset"
+checkpoint_path: ""
+optim_type: "SGD_GCC"
+lr: 0.007
