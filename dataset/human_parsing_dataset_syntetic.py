@@ -7,7 +7,7 @@ import numpy as np
 import cv2
 import albumentations as A
 
-from utils.utils import load_images, load_images_to_image_name_path_map
+from utils.utils import load_images
 
 
 class HumanParsingDatasetSyntetic(torch.utils.data.Dataset):
@@ -60,7 +60,7 @@ class HumanParsingDatasetSyntetic(torch.utils.data.Dataset):
         ]
     )
     CLASS_MAP = {
-        0: "Background",
+        0: "background",
         1: "body",
         2: "upper clothes",
         3: "bottom clothes",
@@ -133,11 +133,13 @@ class HumanParsingDatasetSyntetic(torch.utils.data.Dataset):
 
 
 if __name__ == "__main__":
-    dataset_path = Path(
-        "J:/deepcloth/datasets/human_body_parsing/kjn_parse_dataset_001"
-    )
-    dataset = HumanParsingDataset(dataset_path=dataset_path, train_mode=True)
+    dataset_paths = [
+        Path("J:/deepcloth/datasets/human_body_parsing/kjn_parse_dataset_001"),
+        Path("J:/deepcloth/datasets/syn_viton_001"),
+    ]
+    dataset = HumanParsingDatasetSyntetic(dataset_paths=dataset_paths, train_mode=True)
     for i in range(len(dataset) - 1):
         output = dataset[i]
         output["image"].size
         output["label"].size
+        break

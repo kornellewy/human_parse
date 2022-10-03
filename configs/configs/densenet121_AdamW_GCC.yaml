@@ -6,7 +6,7 @@ model_name: "densenet121"
 model_in_channels: 3
 model_out_channels: 9
 base_dir_path: "densenet121_AdamW_GCC"
-dataset_path: "J:/deepcloth/datasets/human_body_parsing/kjn_parse_dataset"
+dataset_paths: ["J:/deepcloth/datasets/human_body_parsing/kjn_parse_dataset", "J:/deepcloth/datasets/syn_viton_001"]
 checkpoint_path: "best/last.ckpt"
 optim_type: "AdamW_GCC"
 lr: 0.001
