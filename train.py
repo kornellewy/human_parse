@@ -6,24 +6,15 @@ import pytorch_lightning as pl
 from pytorch_lightning.loggers import TensorBoardLogger
 
 from configs.config import read_conf_file
-from human_parsing import HumanParsing
-
-# from human_parsing_with_pose import HumanParsingWithPose
-# from human_parsing_wtih_classifcation import HumanParsingWtihClassifcation
-# from human_parsing_data_module_with_classifcation import (
-#     HumanParsingDataModuleWtihClassifcation,
-# )
-# from human_parsing_with_pose_with_classifcation import (
-#     HumanParsingWtihPoseWtihClassifcation,
-# )
-from human_parsing_data_module import HumanParsingDataModule
+from modules.human_parsing_with_classifcation import HumanParsingWtihClassifcation
+from data_module.human_parsing_data_module_syntetic import HumanParsingDataModule
 
 
 def run_experiments(experiments: List[str]) -> None:
     for experiment in experiments:
         hparams = read_conf_file(yaml_path=experiment)
         print("hparams: ", hparams)
-        module = HumanParsing(hparams=hparams)
+        module = HumanParsingWtihClassifcation(hparams=hparams)
         datamodule = HumanParsingDataModule(hparams=hparams)
         checkpoint_path = None
         if hparams["checkpoint_path"]:
@@ -42,7 +33,7 @@ def run_experiments(experiments: List[str]) -> None:
         )
         Path(hparams["base_dir_path"]).mkdir(exist_ok=True, parents=True)
         logger = TensorBoardLogger(
-            save_dir=hparams["base_dir_path"], name=hparams["tags"]
+            save_dir=hparams["base_dir_path"], prefix=hparams["tags"]
         )
         trainer = pl.Trainer(
             gpus=[0],
@@ -65,6 +56,6 @@ if __name__ == "__main__":
         # "configs/configs/conv_unet_Adam_GCC.yaml",
         # "configs/configs/unet_Adam_GCC.yaml",
         # "configs/configs/unet_SGD_GCC.yaml",
-        "configs/configs/att_conv_unet_Adam_GCC.yaml"
+        "configs/configs/densenet121_AdamW_GCC.yaml"
     ]
     run_experiments(experiments=experiments)

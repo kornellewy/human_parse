@@ -31,11 +31,12 @@ class HumanParsingWtihClassifcation(pl.LightningModule):
         self.model = self.init_model()
         self.criterion_segmentation = nn.NLLLoss(weight=None)
         self.criterion_classification = nn.BCEWithLogitsLoss(weight=None)
-        self.criterionIOU = JaccardIndex(num_classes=9)
+        self.criterionIOU = JaccardIndex(num_classes=4)
 
     def init_model(self):
         if self._hparams["model_name"] == "squeezenet":
             model = PSPNet(
+                n_classes=4,
                 sizes=(1, 2, 3, 6),
                 psp_size=512,
                 deep_features_size=256,
@@ -43,6 +44,7 @@ class HumanParsingWtihClassifcation(pl.LightningModule):
             )
         elif self._hparams["model_name"] == "densenet121":
             model = PSPNet(
+                n_classes=4,
                 sizes=(1, 2, 3, 6),
                 psp_size=1024,
                 deep_features_size=512,
@@ -50,6 +52,7 @@ class HumanParsingWtihClassifcation(pl.LightningModule):
             )
         elif self._hparams["model_name"] == "resnet18":
             model = PSPNet(
+                n_classes=4,
                 sizes=(1, 2, 3, 6),
                 psp_size=512,
                 deep_features_size=256,
@@ -57,6 +60,7 @@ class HumanParsingWtihClassifcation(pl.LightningModule):
             )
         elif self._hparams["model_name"] == "resnet34":
             model = PSPNet(
+                n_classes=4,
                 sizes=(1, 2, 3, 6),
                 psp_size=512,
                 deep_features_size=256,
@@ -64,6 +68,7 @@ class HumanParsingWtihClassifcation(pl.LightningModule):
             )
         elif self._hparams["model_name"] == "resnet50":
             model = PSPNet(
+                n_classes=4,
                 sizes=(1, 2, 3, 6),
                 psp_size=2048,
                 deep_features_size=1024,
@@ -71,6 +76,7 @@ class HumanParsingWtihClassifcation(pl.LightningModule):
             )
         elif self._hparams["model_name"] == "resnet101":
             model = PSPNet(
+                n_classes=4,
                 sizes=(1, 2, 3, 6),
                 psp_size=2048,
                 deep_features_size=1024,
@@ -78,6 +84,7 @@ class HumanParsingWtihClassifcation(pl.LightningModule):
             )
         elif self._hparams["model_name"] == "resnet152":
             model = PSPNet(
+                n_classes=4,
                 sizes=(1, 2, 3, 6),
                 psp_size=2048,
                 deep_features_size=1024,
@@ -104,6 +111,8 @@ class HumanParsingWtihClassifcation(pl.LightningModule):
         image = batch["image"]
         label = batch["label"]
         label_classification = batch["label_classification"]
+        label_classification = label_classification.type_as(image)
+
         output_predition, output_classification = self.model(image)
         segmentation_loss = self.criterion_segmentation(output_predition, label)
         classification_loss = self.criterion_classification(
@@ -119,6 +128,8 @@ class HumanParsingWtihClassifcation(pl.LightningModule):
         image = batch["image"]
         label = batch["label"]
         label_classification = batch["label_classification"]
+        label_classification = label_classification.type_as(image)
+
         output_predition, output_classification = self.model(image)
         segmentation_loss = self.criterion_segmentation(output_predition, label)
         classification_loss = self.criterion_classification(
@@ -136,25 +147,26 @@ class HumanParsingWtihClassifcation(pl.LightningModule):
             ]
         ]
 
-    def validation_epoch_end(self, validation_step_outputs):
-        visuals_test_preprocesed = [[]]
-        for step_idx, valid_step_output in enumerate(validation_step_outputs):
-            if step_idx > 10:
-                break
-            for visual_test in valid_step_output[0]:
-                visual_test = visual_test.to(torch.float32)
-                visuals_test_preprocesed[0].append(visual_test)
-        # board_add_images(
-        #     board=self.logger.experiment,
-        #     tag_name=f"{self._hparams['tags']}_valid",
-        #     img_tensors_list=visuals_test_preprocesed,
-        #     step_count=self.current_epoch,
-        # )
+    # def validation_epoch_end(self, validation_step_outputs):
+    #     visuals_test_preprocesed = [[]]
+    #     for step_idx, valid_step_output in enumerate(validation_step_outputs):
+    #         if step_idx > 10:
+    #             break
+    #         for visual_test in valid_step_output[0]:
+    #             visual_test = visual_test.to(torch.float32)
+    #             visuals_test_preprocesed[0].append(visual_test)
+    # board_add_images(
+    #     board=self.logger.experiment,
+    #     tag_name=f"{self._hparams['tags']}_valid",
+    #     img_tensors_list=visuals_test_preprocesed,
+    #     step_count=self.current_epoch,
+    # )
 
     def test_step(self, batch, _):
         image = batch["image"]
         label = batch["label"]
-        label_classification = batch["label_classification"]
+        # label_classification = batch["label_classification"]
+        # label_classification = label_classification.type_as(image)
         output_predition, _ = self.model(image)
 
         loss = self.criterionIOU(output_predition, label)
