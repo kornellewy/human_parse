@@ -1,12 +1,18 @@
 tags: "densenet121_AdamW_GCC"
 title: "densenet121_AdamW_GCC"
-epochs_num: 50
-batch_size: 73
+epochs_num: 30
+batch_size: 50
+num_workers: 4
 model_name: "densenet121"
 model_in_channels: 3
-model_out_channels: 9
+model_out_channels: 4
 base_dir_path: "densenet121_AdamW_GCC"
-dataset_paths: ["J:/deepcloth/datasets/human_body_parsing/kjn_parse_dataset", "J:/deepcloth/datasets/syn_viton_001"]
+dataset_paths: ["J:/deepcloth/datasets/human_body_parsing/kjn_parse_dataset", "J:/deepcloth/datasets/syn_viton_001", "J:/deepcloth/datasets/syn_viton_002", "J:/deepcloth/datasets/syn_viton_003", "J:/deepcloth/datasets/syn_viton_004"]
 checkpoint_path: "best/last.ckpt"
 optim_type: "AdamW_GCC"
-lr: 0.001
+lr: 0.0001
+cross_entropy_loss_lambda: 1
+segmentation_loss_lambda: 1
+iou_loss_lambda: 10
+canny_loss_lambda: 10
+classification_loss_lambda: 1

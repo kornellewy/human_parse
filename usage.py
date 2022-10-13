@@ -7,8 +7,8 @@ import torch
 import cv2
 import pytorch_lightning as pl
 
-from human_parsing import HumanParsing
-from human_parsing_dataset import HumanParsingDataset
+from modules.human_parsing_with_classifcation import HumanParsingWtihClassifcation
+from dataset.human_parsing_dataset_syntetic import HumanParsingDatasetSyntetic
 from configs.config import read_conf_file
 
 
@@ -25,15 +25,15 @@ def save_images(img_tensors, img_names, save_dir):
 
 
 if __name__ == "__main__":
-    hparams = read_conf_file(yaml_path="configs/configs/conv_unet_Adam_GCC.yaml")
+    hparams = read_conf_file(yaml_path="configs/configs/densenet121_AdamW_GCC.yaml")
     weight_path = "best/last.ckpt"
     model = (
-        HumanParsing(hparams=hparams)
+        HumanParsingWtihClassifcation(hparams=hparams)
         .load_from_checkpoint(weight_path, hparams=hparams)
         .eval()
     )
-    dataset = HumanParsingDataset(
-        dataset_path=hparams["dataset_path"], train_mode=False
+    dataset = HumanParsingDatasetSyntetic(
+        dataset_paths=hparams["dataset_paths"], train_mode=False
     )
     dataloader = torch.utils.data.DataLoader(
         dataset,
@@ -41,9 +41,10 @@ if __name__ == "__main__":
     )
     for batch in dataloader:
         with torch.no_grad():
-            output = model.forward(batch=batch)[1]
-        output = output.cpu().numpy().astype(np.uint8).transpose(1, 2, 0)
+            output = model.forward(batch=batch)
+        output = output[0].cpu().numpy().astype(np.uint8).transpose(1, 2, 0)
+        output = np.asarray(np.argmax(output, axis=2), dtype=np.uint8)
         output = cv2.cvtColor(output, cv2.COLOR_GRAY2RGB)
+        output = output * 10
         smgm_path = Path("test").joinpath(f"{batch['image_name'][0]}.png").as_posix()
         cv2.imwrite(smgm_path, output)
-        break

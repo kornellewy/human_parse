@@ -16,6 +16,8 @@ import torch.nn as nn
 import pytorch_lightning as pl
 
 from optims.Adam import Adam_GCC2, AdamW_GCC
+from optims.SGD import SGD_GCC
+from torch.optim.lr_scheduler import MultiStepLR
 from u_net_models.u_net_models import U_ConvNextWithClassification
 from psp_models.pspnet import PSPNet
 from torchmetrics import JaccardIndex
@@ -91,15 +93,32 @@ class HumanParsingWtihClassifcation(pl.LightningModule):
                 backend="resnet152",
             )
         elif self._hparams["model_name"] == "conv_unet":
-            model = U_ConvNextWithClassification()
+            model = U_ConvNextWithClassification(
+                img_ch=self._hparams["model_in_channels"],
+                output_ch=self._hparams["model_out_channels"],
+                n_classes=self._hparams["model_out_channels"],
+            )
         return model
 
     def configure_optimizers(self):
         lr = self._hparams["lr"]
+
         if self._hparams["optim_type"] == "Adam_GCC2":
             optimizer = Adam_GCC2(self.model.parameters(), lr=lr)
         elif self._hparams["optim_type"] == "AdamW_GCC":
             optimizer = AdamW_GCC(self.model.parameters(), lr=lr)
+        elif self._hparams["optim_type"] == "SGD_GCC":
+            optimizer = SGD_GCC(self.model.parameters(), lr=lr)
+        scheduler = MultiStepLR(
+            optimizer,
+            milestones=[
+                i for i in range(int(self._hparams["epochs_num"])) if i % 10 == 0
+            ],
+        )
+        print(
+            "milestones: ",
+            [i for i in range(int(self._hparams["epochs_num"])) if i % 10 == 0],
+        )
         return optimizer
 
     def forward(self, batch):
@@ -118,7 +137,10 @@ class HumanParsingWtihClassifcation(pl.LightningModule):
         classification_loss = self.criterion_classification(
             output_classification, label_classification
         )
-        loss = segmentation_loss + 1.0 * classification_loss
+        loss = (
+            self._hparams["segmentation_loss_lambda"] * segmentation_loss
+            + self._hparams["classification_loss_lambda"] * classification_loss
+        )
         self.log("segmentation_loss/train", segmentation_loss)
         self.log("classification_loss/train", classification_loss)
         self.log("loss/train", loss)
@@ -135,7 +157,10 @@ class HumanParsingWtihClassifcation(pl.LightningModule):
         classification_loss = self.criterion_classification(
             output_classification, label_classification
         )
-        loss = segmentation_loss + 1.0 * classification_loss
+        loss = (
+            self._hparams["segmentation_loss_lambda"] * segmentation_loss
+            + self._hparams["classification_loss_lambda"] * classification_loss
+        )
         self.log("segmentation_loss/valid", segmentation_loss)
         self.log("classification_loss/valid", classification_loss)
         self.log("loss/valid", loss)
@@ -165,13 +190,24 @@ class HumanParsingWtihClassifcation(pl.LightningModule):
     def test_step(self, batch, _):
         image = batch["image"]
         label = batch["label"]
-        # label_classification = batch["label_classification"]
-        # label_classification = label_classification.type_as(image)
+        label_classification = batch["label_classification"]
+        label_classification = label_classification.type_as(image)
         output_predition, _ = self.model(image)
-
-        loss = self.criterionIOU(output_predition, label)
+        output_predition, output_classification = self.model(image)
+        segmentation_loss = self.criterion_segmentation(output_predition, label)
+        classification_loss = self.criterion_classification(
+            output_classification, label_classification
+        )
+        loss = (
+            self._hparams["segmentation_loss_lambda"] * segmentation_loss
+            + self._hparams["classification_loss_lambda"] * classification_loss
+        )
+        loss_iou = self.criterionIOU(output_predition, label)
         output_predition = output_predition.unsqueeze(dim=1)
         label = label.unsqueeze(dim=1)
+        self.log("loss_iou/test", loss_iou)
+        self.log("segmentation_loss/test", segmentation_loss)
+        self.log("classification_loss/test", classification_loss)
         self.log("loss/test", loss)
         return [
             [
@@ -180,17 +216,17 @@ class HumanParsingWtihClassifcation(pl.LightningModule):
             ]
         ]
 
-    def test_epoch_end(self, test_step_outputs):
-        visuals_test_preprocesed = [[]]
-        for step_idx, valid_step_output in enumerate(test_step_outputs):
-            if step_idx > 10:
-                break
-            for visual_test in valid_step_output[0]:
-                visual_test = visual_test.to(torch.float32)
-                visuals_test_preprocesed[0].append(visual_test)
-        # board_add_images(
-        #     board=self.logger.experiment,
-        #     tag_name=f"{self._hparams['tags']}_valid",
-        #     img_tensors_list=visuals_test_preprocesed,
-        #     step_count=self.current_epoch,
-        # )
+    # def test_epoch_end(self, test_step_outputs):
+    #     visuals_test_preprocesed = [[]]
+    #     for step_idx, valid_step_output in enumerate(test_step_outputs):
+    #         if step_idx > 10:
+    #             break
+    #         for visual_test in valid_step_output[0]:
+    #             visual_test = visual_test.to(torch.float32)
+    #             visuals_test_preprocesed[0].append(visual_test)
+    # board_add_images(
+    #     board=self.logger.experiment,
+    #     tag_name=f"{self._hparams['tags']}_valid",
+    #     img_tensors_list=visuals_test_preprocesed,
+    #     step_count=self.current_epoch,
+    # )

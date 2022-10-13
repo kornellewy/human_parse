@@ -1,15 +1,16 @@
-tags: "squeezenet_SGD_GCC"
-title: "squeezenet_SGD_GCC"
+tags: "unet_AdamW_GCC"
+title: "unet_AdamW_GCC"
 epochs_num: 10
-batch_size: 64
-model_name: "squeezenet"
+batch_size: 128
+num_workers: 4
+model_name: "unet"
 model_in_channels: 3
-model_out_channels: 9
-base_dir_path: "squeezenet_SGD_GCC"
+model_out_channels: 4
+base_dir_path: "unet_AdamW_GCC"
 dataset_paths: ["J:/deepcloth/datasets/human_body_parsing/kjn_parse_dataset", "J:/deepcloth/datasets/syn_viton_001", "J:/deepcloth/datasets/syn_viton_002", "J:/deepcloth/datasets/syn_viton_003", "J:/deepcloth/datasets/syn_viton_004"]
 checkpoint_path: ""
-optim_type: "SGD_GCC"
-lr: 0.001
+optim_type: "AdamW_GCC"
+lr: 0.0001
 cross_entropy_loss_lambda: 1
 segmentation_loss_lambda: 1
 iou_loss_lambda: 10

@@ -132,3 +132,9 @@ best*
 att_conv_unet_AdamW_GCC*
 conv_unet_AdamW_GCC*
 conv_unet_SGD_GCC*
+conv_unet_Adam_GCC*
+densenet121_SGD_GCC*
+densenet121_AdamW_GCC*
+squeezenet_Adam_GCC*
+resnet50_SGD_GCC*
+resnet50_Adam_GCC*

@@ -4,9 +4,11 @@ from typing import List
 import torch
 import pytorch_lightning as pl
 from pytorch_lightning.loggers import TensorBoardLogger
+from pytorch_lightning.callbacks import LearningRateMonitor
 
 from configs.config import read_conf_file
 from modules.human_parsing_with_classifcation import HumanParsingWtihClassifcation
+from modules.human_parsing import HumanParsing
 from data_module.human_parsing_data_module_syntetic import HumanParsingDataModule
 
 
@@ -35,16 +37,17 @@ def run_experiments(experiments: List[str]) -> None:
         logger = TensorBoardLogger(
             save_dir=hparams["base_dir_path"], prefix=hparams["tags"]
         )
+        lr_monitor = LearningRateMonitor(logging_interval="epoch")
         trainer = pl.Trainer(
             gpus=[0],
-            precision=16,
+            # precision=16,
             check_val_every_n_epoch=1,
             max_epochs=hparams["epochs_num"],
             default_root_dir=hparams["base_dir_path"],
             detect_anomaly=True,
             resume_from_checkpoint=checkpoint_path,
             logger=logger,
-            callbacks=[checkpoint_callback],
+            callbacks=[checkpoint_callback, lr_monitor],
         )
         trainer.fit(module, datamodule)
         trainer.test(model=module, datamodule=datamodule)
@@ -53,9 +56,12 @@ def run_experiments(experiments: List[str]) -> None:
 if __name__ == "__main__":
     torch.cuda.empty_cache()
     experiments = [
-        # "configs/configs/conv_unet_Adam_GCC.yaml",
-        # "configs/configs/unet_Adam_GCC.yaml",
-        # "configs/configs/unet_SGD_GCC.yaml",
-        "configs/configs/densenet121_AdamW_GCC.yaml"
+        # "configs/configs/squeezenet_AdamW_GCC.yaml",
+        # "configs/configs/resnet50_AdamW_GCC.yaml",
+        # "configs/configs/densenet121_AdamW_GCC.yaml",
+        # "configs/configs/conv_unet_AdamW_GCC.yaml"
+        "configs/configs/densenet121_SGD_GCC.yaml"
+        # "configs/configs/conv_unet_SGD_GCC.yaml",
+        # "configs/configs/resnet50_SGD_GCC.yaml"
     ]
     run_experiments(experiments=experiments)

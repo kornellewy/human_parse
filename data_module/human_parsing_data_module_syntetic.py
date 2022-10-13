@@ -27,15 +27,15 @@ class HumanParsingDataModule(pl.LightningDataModule):
 
     def train_dataloader(self):
         return torch.utils.data.DataLoader(
-            self.train_set, batch_size=self._hparams["batch_size"]
+            self.train_set, batch_size=self._hparams["batch_size"], num_workers=self._hparams["num_workers"]
         )
 
     def val_dataloader(self):
         return torch.utils.data.DataLoader(
-            self.valid_set, batch_size=self._hparams["batch_size"]
+            self.valid_set, batch_size=self._hparams["batch_size"], num_workers=self._hparams["num_workers"]
         )
 
     def test_dataloader(self):
         return torch.utils.data.DataLoader(
-            self.test_set, batch_size=self._hparams["batch_size"]
+            self.test_set, batch_size=self._hparams["batch_size"], num_workers=self._hparams["num_workers"]
         )
